@@ -13,7 +13,7 @@ from conv import *
 
 
 # Implementation of PMLP_GCN, which can become MLP or GCN depending on whether using message passing
-class PMLP_GCN(nn.Module): 
+class PMLP_GCN(nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers=2, dropout=0.5):
         super(PMLP_GCN, self).__init__()
         self.dropout = dropout
@@ -25,25 +25,25 @@ class PMLP_GCN(nn.Module):
 
         self.fcs = nn.ModuleList([])
         self.fcs.append(nn.Linear(in_channels, hidden_channels, bias=self.ff_bias))
-        for _ in range(self.num_layers - 2): self.fcs.append(nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias)) #1s
-        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias)) #1
+        for _ in range(self.num_layers - 2): self.fcs.append(
+            nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias))  # 1s
+        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias))  # 1
         self.reset_parameters()
-    
 
     def reset_parameters(self):
-        for mlp in self.fcs: 
+        for mlp in self.fcs:
             nn.init.xavier_uniform_(mlp.weight, gain=1.414)
             nn.init.zeros_(mlp.bias)
 
     def forward(self, x, edge_index, use_mp=True):
         for i in range(self.num_layers - 1):
-            x = x @ self.fcs[i].weight.t() 
+            x = x @ self.fcs[i].weight.t()
             if use_mp: x = gcn_conv(x, edge_index)  # Optionally replace 'gcn_conv' with other conv functions in conv.py
             if self.ff_bias: x = x + self.fcs[i].bias
             x = self.activation(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
 
-        x = x @ self.fcs[-1].weight.t() 
+        x = x @ self.fcs[-1].weight.t()
         if use_mp: x = gcn_conv(x, edge_index)
         if self.ff_bias: x = x + self.fcs[-1].bias
         return x
@@ -62,13 +62,13 @@ class SGC(nn.Module):
 
         self.fcs = nn.ModuleList([])
         self.fcs.append(nn.Linear(in_channels, hidden_channels, bias=self.ff_bias))
-        for _ in range(self.num_layers - 2): self.fcs.append(nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias)) #1s
-        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias)) #1
+        for _ in range(self.num_layers - 2): self.fcs.append(
+            nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias))  # 1s
+        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias))  # 1
         self.reset_parameters()
-    
 
     def reset_parameters(self):
-        for mlp in self.fcs: 
+        for mlp in self.fcs:
             nn.init.xavier_uniform_(mlp.weight, gain=1.414)
             nn.init.zeros_(mlp.bias)
 
@@ -77,16 +77,16 @@ class SGC(nn.Module):
             if use_mp: x = gcn_conv(x, edge_index)
 
         for i in range(self.num_layers - 1):
-            x = self.fcs[i](x) 
+            x = self.fcs[i](x)
             x = self.activation(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
 
-        x = self.fcs[-1](x) 
+        x = self.fcs[-1](x)
         return x
 
 
 # Implementation of PMLP_APP, which can become MLP or SGC depending on whether using message passing
-class APPNP(nn.Module): #residual connection
+class APPNP(nn.Module):  # residual connection
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers=2, dropout=0.5, num_mps=2):
         super(APPNP, self).__init__()
         self.dropout = dropout
@@ -99,32 +99,31 @@ class APPNP(nn.Module): #residual connection
 
         self.fcs = nn.ModuleList([])
         self.fcs.append(nn.Linear(in_channels, hidden_channels, bias=self.ff_bias))
-        for _ in range(self.num_layers - 2): self.fcs.append(nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias)) #1s
-        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias)) #1
+        for _ in range(self.num_layers - 2): self.fcs.append(
+            nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias))  # 1s
+        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias))  # 1
         self.reset_parameters()
-    
 
     def reset_parameters(self):
-        for mlp in self.fcs: 
+        for mlp in self.fcs:
             nn.init.xavier_uniform_(mlp.weight, gain=1.414)
             nn.init.zeros_(mlp.bias)
 
     def forward(self, x, edge_index, use_mp=True):
         for i in range(self.num_layers - 1):
-            x = self.fcs[i](x) 
+            x = self.fcs[i](x)
             x = self.activation(x)
-            x = F.dropout(x, p=self.dropout, training=self.training)    
-        x = self.fcs[-1](x) 
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.fcs[-1](x)
         for i in range(self.num_mps):
             if use_mp: x = gcn_conv(x, edge_index)
         return x
-    
 
 
 # The rest models are used for additional experiments in the paper
 
 # Implementation of PMLP_GCNII, which can become ResNet (MLP with residual connections) or GCNII depending on whether using message passing
-class GCNII(nn.Module): #GCNII
+class GCNII(nn.Module):  # GCNII
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers=2, dropout=0.5):
         super(GCNII, self).__init__()
         self.dropout = dropout
@@ -136,12 +135,13 @@ class GCNII(nn.Module): #GCNII
 
         self.fcs = nn.ModuleList([])
         self.fcs.append(nn.Linear(in_channels, hidden_channels, bias=self.ff_bias))
-        for _ in range(self.num_layers - 2): self.fcs.append(nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias)) #1s
-        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias)) #1
+        for _ in range(self.num_layers - 2): self.fcs.append(
+            nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias))  # 1s
+        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias))  # 1
         self.reset_parameters()
 
     def reset_parameters(self):
-        for mlp in self.fcs: 
+        for mlp in self.fcs:
             nn.init.xavier_uniform_(mlp.weight, gain=1.414)
             nn.init.zeros_(mlp.bias)
 
@@ -152,18 +152,20 @@ class GCNII(nn.Module): #GCNII
         x_ = x.clone()
 
         for i in range(1, self.num_layers - 1):
-            x = x * (1. - 0.5 / i) + x @ self.fcs[i].weight.t() * (0.5 / i) 
-            if use_mp: x = conv_resi(x, edge_index, x_)
-            else: x = 0.9 * x + 0.1 * x_
+            x = x * (1. - 0.5 / i) + x @ self.fcs[i].weight.t() * (0.5 / i)
+            if use_mp:
+                x = conv_resi(x, edge_index, x_)
+            else:
+                x = 0.9 * x + 0.1 * x_
             x = self.activation(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
 
-        x =  x @ self.fcs[-1].weight.t() 
+        x = x @ self.fcs[-1].weight.t()
         if use_mp: x = gcn_conv(x, edge_index)
         return x
 
 
-class PMLP_JKNet(nn.Module): #JKNET(concatation pooling)
+class PMLP_JKNet(nn.Module):  # JKNET(concatation pooling)
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers=2, dropout=0.5):
         super(PMLP_JKNet, self).__init__()
         self.dropout = dropout
@@ -175,29 +177,31 @@ class PMLP_JKNet(nn.Module): #JKNET(concatation pooling)
 
         self.fcs = nn.ModuleList([])
         self.fcs.append(nn.Linear(in_channels, hidden_channels, bias=self.ff_bias))
-        for _ in range(self.num_layers - 2): self.fcs.append(nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias)) #1s
-        self.fcs.append(nn.Linear(hidden_channels * (self.num_layers - 1), out_channels, bias=self.ff_bias)) #1
+        for _ in range(self.num_layers - 2): self.fcs.append(
+            nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias))  # 1s
+        self.fcs.append(nn.Linear(hidden_channels * (self.num_layers - 1), out_channels, bias=self.ff_bias))  # 1
         self.reset_parameters()
 
     def reset_parameters(self):
-        for mlp in self.fcs: 
+        for mlp in self.fcs:
             nn.init.xavier_uniform_(mlp.weight, gain=1.414)
             nn.init.zeros_(mlp.bias)
 
     def forward(self, x, edge_index, use_mp=True):
         xs = []
         for i in range(0, self.num_layers - 1):
-            x = x @ self.fcs[i].weight.t() 
+            x = x @ self.fcs[i].weight.t()
             if use_mp: x = gcn_conv(x, edge_index)
             x = self.activation(x)
             xs.append(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
 
         x = torch.cat(xs, dim=-1)
-        x =  x @ self.fcs[-1].weight.t() 
+        x = x @ self.fcs[-1].weight.t()
         return x
 
-class PMLP_SGCres(nn.Module): #SGC with residual connections
+
+class PMLP_SGCres(nn.Module):  # SGC with residual connections
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers=2, dropout=0.5, num_mps=2):
         super(PMLP_SGCres, self).__init__()
         self.dropout = dropout
@@ -209,13 +213,13 @@ class PMLP_SGCres(nn.Module): #SGC with residual connections
 
         self.fcs = nn.ModuleList([])
         self.fcs.append(nn.Linear(in_channels, hidden_channels, bias=self.ff_bias))
-        for _ in range(self.num_layers - 2): self.fcs.append(nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias)) #1s
-        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias)) #1
+        for _ in range(self.num_layers - 2): self.fcs.append(
+            nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias))  # 1s
+        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias))  # 1
         self.reset_parameters()
-    
 
     def reset_parameters(self):
-        for mlp in self.fcs: 
+        for mlp in self.fcs:
             nn.init.xavier_uniform_(mlp.weight, gain=1.414)
             nn.init.zeros_(mlp.bias)
 
@@ -225,16 +229,15 @@ class PMLP_SGCres(nn.Module): #SGC with residual connections
             if use_mp: x = conv_resi(x, edge_index, x_)
 
         for i in range(self.num_layers - 1):
-            x = self.fcs[i](x) 
+            x = self.fcs[i](x)
             x = self.activation(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
 
-        x = self.fcs[-1](x) 
+        x = self.fcs[-1](x)
         return x
 
 
-
-class PMLP_SGCresinf(nn.Module): #SGC with residual connections (in test but not in train)
+class PMLP_SGCresinf(nn.Module):  # SGC with residual connections (in test but not in train)
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers=2, dropout=0.5, num_mps=2):
         super(PMLP_SGCresinf, self).__init__()
         self.dropout = dropout
@@ -246,32 +249,34 @@ class PMLP_SGCresinf(nn.Module): #SGC with residual connections (in test but not
 
         self.fcs = nn.ModuleList([])
         self.fcs.append(nn.Linear(in_channels, hidden_channels, bias=self.ff_bias))
-        for _ in range(self.num_layers - 2): self.fcs.append(nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias)) #1s
-        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias)) #1
+        for _ in range(self.num_layers - 2): self.fcs.append(
+            nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias))  # 1s
+        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias))  # 1
         self.reset_parameters()
-    
 
     def reset_parameters(self):
-        for mlp in self.fcs: 
+        for mlp in self.fcs:
             nn.init.xavier_uniform_(mlp.weight, gain=1.414)
             nn.init.zeros_(mlp.bias)
 
     def forward(self, x, edge_index, use_mp=True):
         x_ = x.clone()
         for i in range(self.num_mps):
-            if use_mp: x = conv_resi(x, edge_index, x_)
-            else: x =  gcn_conv(x, edge_index)
+            if use_mp:
+                x = conv_resi(x, edge_index, x_)
+            else:
+                x = gcn_conv(x, edge_index)
 
         for i in range(self.num_layers - 1):
-            x = self.fcs[i](x) 
+            x = self.fcs[i](x)
             x = self.activation(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
 
-        x = self.fcs[-1](x) 
+        x = self.fcs[-1](x)
         return x
-    
-    
-class PMLP_APPNPres(nn.Module): 
+
+
+class PMLP_APPNPres(nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers=2, dropout=0.5, num_mps=2):
         super(PMLP_APPNPres, self).__init__()
         self.dropout = dropout
@@ -284,29 +289,29 @@ class PMLP_APPNPres(nn.Module):
 
         self.fcs = nn.ModuleList([])
         self.fcs.append(nn.Linear(in_channels, hidden_channels, bias=self.ff_bias))
-        for _ in range(self.num_layers - 2): self.fcs.append(nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias)) #1s
-        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias)) #1
+        for _ in range(self.num_layers - 2): self.fcs.append(
+            nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias))  # 1s
+        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias))  # 1
         self.reset_parameters()
-    
 
     def reset_parameters(self):
-        for mlp in self.fcs: 
+        for mlp in self.fcs:
             nn.init.xavier_uniform_(mlp.weight, gain=1.414)
             nn.init.zeros_(mlp.bias)
 
     def forward(self, x, edge_index, use_mp=True):
         for i in range(self.num_layers - 1):
-            x = self.fcs[i](x) 
+            x = self.fcs[i](x)
             x = self.activation(x)
-            x = F.dropout(x, p=self.dropout, training=self.training)    
-        x = self.fcs[-1](x) 
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.fcs[-1](x)
         x_ = x.clone()
         for i in range(self.num_mps):
             if use_mp: x = conv_resi(x, edge_index, x_)
         return x
 
 
-class PMLP_APPNPresinf(nn.Module): 
+class PMLP_APPNPresinf(nn.Module):
     def __init__(self, in_channels, hidden_channels, out_channels, num_layers=2, dropout=0.5, num_mps=2):
         super(PMLP_APPNPresinf, self).__init__()
         self.dropout = dropout
@@ -319,24 +324,26 @@ class PMLP_APPNPresinf(nn.Module):
 
         self.fcs = nn.ModuleList([])
         self.fcs.append(nn.Linear(in_channels, hidden_channels, bias=self.ff_bias))
-        for _ in range(self.num_layers - 2): self.fcs.append(nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias)) #1s
-        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias)) #1
+        for _ in range(self.num_layers - 2): self.fcs.append(
+            nn.Linear(hidden_channels, hidden_channels, bias=self.ff_bias))  # 1s
+        self.fcs.append(nn.Linear(hidden_channels, out_channels, bias=self.ff_bias))  # 1
         self.reset_parameters()
-    
 
     def reset_parameters(self):
-        for mlp in self.fcs: 
+        for mlp in self.fcs:
             nn.init.xavier_uniform_(mlp.weight, gain=1.414)
             nn.init.zeros_(mlp.bias)
 
     def forward(self, x, edge_index, use_mp=True):
         for i in range(self.num_layers - 1):
-            x = self.fcs[i](x) 
+            x = self.fcs[i](x)
             x = self.activation(x)
-            x = F.dropout(x, p=self.dropout, training=self.training)    
-        x = self.fcs[-1](x) 
+            x = F.dropout(x, p=self.dropout, training=self.training)
+        x = self.fcs[-1](x)
         x_ = x.clone()
         for i in range(self.num_mps):
-            if use_mp: x = conv_resi(x, edge_index, x_)
-            else: x =  gcn_conv(x, edge_index)
+            if use_mp:
+                x = conv_resi(x, edge_index, x_)
+            else:
+                x = gcn_conv(x, edge_index)
         return x

@@ -22,7 +22,7 @@ from sklearn.metrics import jaccard_score
 from sklearn.metrics.pairwise import euclidean_distances, cosine_similarity
 import numpy as np
 from deeprobust.graph.utils import *
-#from torch_geometric.nn import GINConv, GATConv, GCNConv, JumpingKnowledge
+# from torch_geometric.nn import GINConv, GATConv, GCNConv, JumpingKnowledge
 from torch_geometric.nn import GINConv, GATConv, GCNConv, JumpingKnowledge
 from torch.nn import Sequential, Linear, ReLU
 from sklearn.preprocessing import normalize
@@ -32,8 +32,9 @@ from torch_scatter import scatter_add
 from torch_geometric.nn.conv import MessagePassing
 from torch_geometric.utils import add_remaining_self_loops, to_undirected
 
-#from ..inits import glorot, zeros
+# from ..inits import glorot, zeros
 from torch_geometric.nn.inits import glorot, zeros
+
 
 class GCNConv(MessagePassing):
     r"""The graph convolutional operator from the `"Semi-supervised
@@ -94,7 +95,7 @@ class GCNConv(MessagePassing):
     def norm(edge_index, num_nodes, edge_weight=None, improved=False,
              dtype=None):
         if edge_weight is None:
-            edge_weight = torch.ones((edge_index.size(1), ), dtype=dtype,
+            edge_weight = torch.ones((edge_index.size(1),), dtype=dtype,
                                      device=edge_index.device)
 
         fill_value = 1 if not improved else 2
@@ -145,8 +146,8 @@ class GCNConv(MessagePassing):
         return '{}({}, {})'.format(self.__class__.__name__, self.in_channels,
                                    self.out_channels)
 
-def inject_noise(x, scale_noise):
 
+def inject_noise(x, scale_noise):
     """
     Main function to sample noise
     ---
@@ -171,7 +172,8 @@ def inject_noise(x, scale_noise):
 
 class Noisy_GCN(nn.Module):
 
-    def __init__(self, nfeat, nhid, nclass, dropout=0.5, lr=0.01, drop=False, weight_decay=5e-4, n_edge=1,with_relu=True,
+    def __init__(self, nfeat, nhid, nclass, dropout=0.5, lr=0.01, drop=False, weight_decay=5e-4, n_edge=1,
+                 with_relu=True,
                  with_bias=True, device=None, noise_ratio_1=0.1):
 
         super(Noisy_GCN, self).__init__()
@@ -211,9 +213,8 @@ class Noisy_GCN(nn.Module):
 
         """GCN from geometric"""
         """network from torch-geometric, """
-        self.gc1 = GCNConv(nfeat, nhid, bias=True,)
+        self.gc1 = GCNConv(nfeat, nhid, bias=True, )
         self.gc2 = GCNConv(nhid, nclass, bias=True, )
-
 
         """GAT from torch-geometric"""
         # nclass = int(nclass)
@@ -269,21 +270,16 @@ class Noisy_GCN(nn.Module):
             adj_2 = self.att_coef(x, adj, i=1).to(self.device)
             adj_memory = adj_2.to_dense()  # without memory
             # adj_memory = self.gate * adj.to_dense() + (1 - self.gate) * adj_2.to_dense()
-            row, col = adj_memory.nonzero()[:,0], adj_memory.nonzero()[:,1]
+            row, col = adj_memory.nonzero()[:, 0], adj_memory.nonzero()[:, 1]
             edge_index = torch.stack((row, col), dim=0)
             adj_values = adj_memory[row, col]
         else:
             edge_index = adj._indices()
             adj_values = adj._values()
 
-
-
-
         x = F.dropout(x, self.dropout, training=self.training)
 
-
         x = self.gc2(x, edge_index, edge_weight=adj_values)
-
 
         # """GIN"""
         # if self.attention:
@@ -341,7 +337,7 @@ class Noisy_GCN(nn.Module):
         fea_copy = fea.cpu().data.numpy()
         sim_matrix = cosine_similarity(X=fea_copy, Y=fea_copy)  # try cosine similarity
         sim = sim_matrix[row, col]
-        sim[sim<0.1] = 0
+        sim[sim < 0.1] = 0
         # print('dropped {} edges'.format(1-sim.nonzero()[0].shape[0]/len(sim)))
 
         # """use jaccard for binary features and cosine for numeric features"""
@@ -366,11 +362,10 @@ class Noisy_GCN(nn.Module):
         # normalization, make the sum of each row is 1
         att_dense_norm = normalize(att_dense, axis=1, norm='l1')
 
-
         """add learnable dropout, make character vector"""
         if self.drop:
             character = np.vstack((att_dense_norm[row, col].A1,
-                                     att_dense_norm[col, row].A1))
+                                   att_dense_norm[col, row].A1))
             character = torch.from_numpy(character.T)
             drop_score = self.drop_learn_1(character)
             drop_score = torch.sigmoid(drop_score)  # do not use softmax since we only have one element
@@ -386,7 +381,7 @@ class Noisy_GCN(nn.Module):
 
         if att_dense_norm[0, 0] == 0:  # add the weights of self-loop only add self-loop at the first layer
             degree = (att_dense_norm != 0).sum(1).A1
-            lam = 1 / (degree + 1) # degree +1 is to add itself
+            lam = 1 / (degree + 1)  # degree +1 is to add itself
             self_weight = sp.diags(np.array(lam), offsets=0, format="lil")
             att = att_dense_norm + self_weight  # add the self loop
         else:
@@ -395,9 +390,9 @@ class Noisy_GCN(nn.Module):
         row, col = att.nonzero()
         att_adj = np.vstack((row, col))
         att_edge_weight = att[row, col]
-        att_edge_weight = np.exp(att_edge_weight)   # exponent, kind of softmax
-        att_edge_weight = torch.tensor(np.array(att_edge_weight)[0], dtype=torch.float32)#.cuda()
-        att_adj = torch.tensor(att_adj, dtype=torch.int64)#.cuda()
+        att_edge_weight = np.exp(att_edge_weight)  # exponent, kind of softmax
+        att_edge_weight = torch.tensor(np.array(att_edge_weight)[0], dtype=torch.float32)  # .cuda()
+        att_adj = torch.tensor(att_adj, dtype=torch.int64)  # .cuda()
 
         shape = (n_node, n_node)
         new_adj = torch.sparse.FloatTensor(att_adj, att_edge_weight, shape)
@@ -405,7 +400,7 @@ class Noisy_GCN(nn.Module):
 
     def add_loop_sparse(self, adj, fill_value=1):
         # make identify sparse tensor
-        row = torch.range(0, int(adj.shape[0]-1), dtype=torch.int64)
+        row = torch.range(0, int(adj.shape[0] - 1), dtype=torch.int64)
         i = torch.stack((row, row), dim=0)
         v = torch.ones(adj.shape[0], dtype=torch.float32)
         shape = adj.shape
@@ -449,7 +444,6 @@ class Noisy_GCN(nn.Module):
         # add self loop
         adj = self.add_loop_sparse(adj)
 
-
         """The normalization gonna be done in the GCNConv"""
         self.adj_norm = adj
         self.features = features
@@ -469,7 +463,8 @@ class Noisy_GCN(nn.Module):
         for i in range(train_iters):
             optimizer.zero_grad()
             output = self.forward(self.features, self.adj_norm)
-            loss_train = F.nll_loss(output[idx_train], labels[idx_train], weight=None)   # this weight is the weight of each training nodes
+            loss_train = F.nll_loss(output[idx_train], labels[idx_train],
+                                    weight=None)  # this weight is the weight of each training nodes
             loss_train.backward()
             optimizer.step()
             if verbose and i % 20 == 0:
@@ -544,7 +539,6 @@ class Noisy_GCN(nn.Module):
             if verbose and i % 10 == 0:
                 print('Epoch {}, training loss: {}'.format(i, loss_train.item()))
 
-
             loss_val = F.nll_loss(output[idx_val], labels[idx_val])
 
             if best_loss_val > loss_val:
@@ -558,7 +552,7 @@ class Noisy_GCN(nn.Module):
                 break
 
         if verbose:
-             print('=== early stopping at {0}, loss_val = {1} ==='.format(i, best_loss_val) )
+            print('=== early stopping at {0}, loss_val = {1} ==='.format(i, best_loss_val))
         self.load_state_dict(weights)
 
     def test(self, idx_test):

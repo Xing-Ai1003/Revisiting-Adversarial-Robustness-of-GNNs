@@ -33,6 +33,7 @@ class MLP(torch.nn.Module):
         Z = torch.cat((X, Y), 1)
         return self.f_theta(Z)
 
+
 class BiVariateGaussianDatasetForMI(torch.utils.data.Dataset):
 
     def __init__(self, X, Y):
@@ -55,7 +56,6 @@ class BiVariateGaussianDatasetForMI(torch.utils.data.Dataset):
         index_joint = np.random.choice(range(self.__len__()), size=batch_size, replace=False)
         index_marginal = np.random.choice(range(self.__len__()), size=batch_size, replace=False)
         return self.X[index_joint], self.Y[index_joint], self.Y[index_marginal]
-
 
 
 class MINE(torch.nn.Module):
@@ -114,7 +114,7 @@ class MINE(torch.nn.Module):
 
             mi_lb, T, expT = self.get_mi(X, Y, Y_tilde)
             moving_average_expT = (
-                        (1 - self.moving_average_rate) * moving_average_expT + self.moving_average_rate * expT).item()
+                    (1 - self.moving_average_rate) * moving_average_expT + self.moving_average_rate * expT).item()
             loss = -1.0 * (T - expT / moving_average_expT)
             optimizer.zero_grad()
             loss.backward()
@@ -195,6 +195,7 @@ class NCDataset(object):
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, len(self))
 
+
 class Visualization():
     def embedding_visualization(self, model_name, dataset, x, y):
         # t-SNE
@@ -213,12 +214,12 @@ class Visualization():
 
         plt.figure(figsize=(8, 8))
         sns.scatterplot(data=df_tsne, x='Dim1', y='Dim2', hue='class',
-                        palette=sns.color_palette("hls",np.max(y)+1),  s=20, legend=False)
+                        palette=sns.color_palette("hls", np.max(y) + 1), s=20, legend=False)
         plt.savefig('./checkpoints/' + dataset + '_' + model_name + '_TSNE_' + str(time.time()) + '.pdf', format="pdf",
                     bbox_inches="tight")
 
     def trend_visualization(self, model_name_list, dataset, attacker, ptb_rate_list):
-        model_covert = {'GAT':'GCN', 'GAT_PST':'GCN_PST', 'GAT_SF':'GCN_SF'}
+        model_covert = {'GAT': 'GCN', 'GAT_PST': 'GCN_PST', 'GAT_SF': 'GCN_SF'}
         # read log
         results = []
         for model_name in model_name_list:
@@ -227,23 +228,26 @@ class Visualization():
                 pr = int(pr) / 100.
                 log_path = './checkpoints/' + model_name + '_' + attacker + '_' + dataset + '_' + str(pr) + '.json'
                 if 'GAT' in model_name:
-                    log_path = './checkpoints/' + model_covert[model_name] + '_' + attacker + '_' + dataset + '_' + str(pr) + '.json'
+                    log_path = './checkpoints/' + model_covert[model_name] + '_' + attacker + '_' + dataset + '_' + str(
+                        pr) + '.json'
                 with open(log_path, 'r') as f:
                     log_json = json.load(f)
                 if len(model_name.split('_')) == 1:
                     basic_model_name, model_trick = model_name, 'None'
                 else:
-                    basic_model_name, model_trick = model_name.split('_')[0], 'w/ '+model_name.split('_')[1]
+                    basic_model_name, model_trick = model_name.split('_')[0], 'w/ ' + model_name.split('_')[1]
                 # results.append([basic_model_name, model_trick, ptb_rate, log_json['model_acc']])
-                results.append([basic_model_name, model_trick, ptb_rate, log_json['model_acc'], log_json['model_std'], float(1/log_json['model_running_time'])])
+                results.append([basic_model_name, model_trick, ptb_rate, log_json['model_acc'], log_json['model_std'],
+                                float(1 / log_json['model_running_time'])])
 
-        df_data = pd.DataFrame(results, columns=['basic model', 'training strategy', 'ptb_rate', 'accuracy'], dtype=float)
+        df_data = pd.DataFrame(results, columns=['basic model', 'training strategy', 'ptb_rate', 'accuracy'],
+                               dtype=float)
         df_data.head()
-        with sns.axes_style('whitegrid'): #darkgrid
+        with sns.axes_style('whitegrid'):  # darkgrid
             plt.figure(figsize=(8, 4))
             sns.lineplot(data=df_data, x='ptb_rate', y='accuracy', hue='basic model',
                          style='training strategy', markers=True, linewidth=2.5,
-                            palette=sns.color_palette("hls",len(model_name_list)), legend=True)
+                         palette=sns.color_palette("hls", len(model_name_list)), legend=True)
             plt.legend(ncol=2, fontsize=8)
             plt.savefig('./checkpoints/' + dataset + '_' + attacker + '_Trends' + '.pdf', format="pdf",
                         bbox_inches="tight")
@@ -252,7 +256,7 @@ class Visualization():
         marker_list, color_list = ['v', 's', 'o'], ['red', 'green', 'blue']
         mi_path_list, acc_path_list = [], []
         for model in model_list:
-            mi_path_list.append('%s_%s_%s_%s.txt'%(dataset_name, attacker, str(ptb_rate),model))
+            mi_path_list.append('%s_%s_%s_%s.txt' % (dataset_name, attacker, str(ptb_rate), model))
             acc_path_list.append('Acc_%s_%s_%s_%s.txt' % (dataset_name, attacker, str(ptb_rate), model))
 
         plt.style.use('seaborn-darkgrid')
@@ -261,7 +265,7 @@ class Visualization():
         line_handles = []
         for idx, mi_path in enumerate(mi_path_list):
             model_name = model_list[idx]
-            begin, MI_values= False, []
+            begin, MI_values = False, []
             with open(mi_path, 'r') as file:
                 for line in file:
                     if not begin and line.split(' ')[0] == '0':
@@ -269,11 +273,11 @@ class Visualization():
                     elif not begin:
                         continue
                     if line.split(' ')[0] == '199':
-                        begin=False
+                        begin = False
                     epoch, mi = line.strip().split(' ')
                     mi = float(mi)
-                    mi-=0.8
-                    if model_name == 'meta' and mi>1.:
+                    mi -= 0.8
+                    if model_name == 'meta' and mi > 1.:
                         mi = mi - 0.5
                     MI_values.append(mi)
             acc_path = acc_path_list[idx]
@@ -285,29 +289,31 @@ class Visualization():
                     elif not begin:
                         continue
                     if line.split(' ')[0] == '199':
-                        begin=False
+                        begin = False
                     epoch, acc = line.strip().split(' ')
                     acc = float(acc)
-                    if model_name == 'GCN' and acc>0.62:
+                    if model_name == 'GCN' and acc > 0.62:
                         acc = acc - 0.06
-                    if model_name == 'GCN_SF' and int(epoch)>75 and acc<0.7:
+                    if model_name == 'GCN_SF' and int(epoch) > 75 and acc < 0.7:
                         acc += 0.04
                     if acc > acc_best:
                         acc_best = acc
-                    if model_name == 'GCN_PST' and int(epoch)>75:
-                        acc = acc_best + 1e-2*np.random.randint(0,1)
+                    if model_name == 'GCN_PST' and int(epoch) > 75:
+                        acc = acc_best + 1e-2 * np.random.randint(0, 1)
                     Acc_values.append(acc)
             from scipy.signal import savgol_filter
-            X, Y_mi, Y_acc = np.arange(0, len(MI_values)), np.array(MI_values), 100*np.array(Acc_values)
+            X, Y_mi, Y_acc = np.arange(0, len(MI_values)), np.array(MI_values), 100 * np.array(Acc_values)
             Y_mi = savgol_filter(Y_mi, 100, 5)
             Y_acc = savgol_filter(Y_acc, 100, 5)
             if model_name == 'GCN_PST': model_name = 'GCN w/ PST'
             if model_name == 'GCN_SF': model_name = 'GCN w/ SF'
-            L1, = ax1.plot(X, Y_mi, label='$MI_{c}$ ('+model_name+')', color=color_list[idx], linewidth=1.5, alpha=0.75)
-            L2, = ax2.plot(X, Y_acc, label='accuracy ('+model_name+')', linestyle='dashed', color=color_list[idx], linewidth=1.2, alpha=0.75)
-            ax1.set_ylim(0.55,1.45)
-            ax2.set_ylim(15,95)
-            line_handles+=[L1, L2]
+            L1, = ax1.plot(X, Y_mi, label='$MI_{c}$ (' + model_name + ')', color=color_list[idx], linewidth=1.5,
+                           alpha=0.75)
+            L2, = ax2.plot(X, Y_acc, label='accuracy (' + model_name + ')', linestyle='dashed', color=color_list[idx],
+                           linewidth=1.2, alpha=0.75)
+            ax1.set_ylim(0.55, 1.45)
+            ax2.set_ylim(15, 95)
+            line_handles += [L1, L2]
 
         ax1.set_ylabel('$MI_{c}$', fontsize=15, loc='top', rotation='horizontal', labelpad=-25.)
         ax2.set_ylabel('Accuracy(%)', fontsize=15, rotation='horizontal', labelpad=20.)
@@ -324,7 +330,7 @@ class Visualization():
         marker_list, color_list = ['v', 's', 'o'], ['red', 'green', 'blue']
         mi_path_list, acc_path_list = [], []
         for model in model_list:
-            mi_path_list.append('%s_%s_%s_%s.txt'%(dataset_name, attacker, str(ptb_rate),model))
+            mi_path_list.append('%s_%s_%s_%s.txt' % (dataset_name, attacker, str(ptb_rate), model))
             acc_path_list.append('Acc_%s_%s_%s_%s.txt' % (dataset_name, attacker, str(ptb_rate), model))
 
         plt.style.use('seaborn-darkgrid')
@@ -333,7 +339,7 @@ class Visualization():
         line_handles = []
         for idx, mi_path in enumerate(mi_path_list):
             model_name = model_list[idx]
-            begin, MI_values= False, []
+            begin, MI_values = False, []
             with open(mi_path, 'r') as file:
                 for line in file:
                     if not begin and line.split(' ')[0] == '0':
@@ -341,10 +347,10 @@ class Visualization():
                     elif not begin:
                         continue
                     if line.split(' ')[0] == '199':
-                        begin=False
+                        begin = False
                     epoch, mi = line.strip().split(' ')
                     mi = float(mi)
-                    if model_name == 'GCN': mi-=0.8
+                    if model_name == 'GCN': mi -= 0.8
                     MI_values.append(mi)
             acc_path = acc_path_list[idx]
             begin, Acc_values, acc_best = False, [], 0
@@ -355,33 +361,35 @@ class Visualization():
                     elif not begin:
                         continue
                     if line.split(' ')[0] == '199':
-                        begin=False
+                        begin = False
                     epoch, acc = line.strip().split(' ')
                     acc = float(acc)
-                    if model_name == 'GCN' and acc>0.62:
+                    if model_name == 'GCN' and acc > 0.62:
                         acc = acc - 0.06
-                    if model_name == 'GCN_SF' and int(epoch)>75 and acc<0.7:
+                    if model_name == 'GCN_SF' and int(epoch) > 75 and acc < 0.7:
                         acc += 0.04
                     if acc > acc_best:
                         acc_best = acc
-                    if model_name == 'GCN_PST' and int(epoch)>75:
-                        acc = acc_best + 1e-2*np.random.randint(0,1)
-                    Acc_values.append(100*acc)
+                    if model_name == 'GCN_PST' and int(epoch) > 75:
+                        acc = acc_best + 1e-2 * np.random.randint(0, 1)
+                    Acc_values.append(100 * acc)
             from scipy.signal import savgol_filter
             X, Y_mi, Y_acc = np.arange(0, len(MI_values)), np.array(MI_values), np.array(Acc_values)
             Y_mi = savgol_filter(Y_mi, 100, 5)
             Y_acc = savgol_filter(Y_acc, 100, 5)
             if model_name == 'GCN_PST': model_name = 'GCN w/ PST'
             if model_name == 'GCN_SF': model_name = 'GCN w/ SF'
-            L1, = ax1.plot(X, Y_mi, label='$MI_{c}$ (' + model_name + ')', color=color_list[idx], linewidth=1.5, alpha=0.75)
-            L2, = ax2.plot(X, Y_acc, label='accuracy (' + model_name + ')', linestyle='dashed', color=color_list[idx], linewidth=1.2, alpha=0.75)
+            L1, = ax1.plot(X, Y_mi, label='$MI_{c}$ (' + model_name + ')', color=color_list[idx], linewidth=1.5,
+                           alpha=0.75)
+            L2, = ax2.plot(X, Y_acc, label='accuracy (' + model_name + ')', linestyle='dashed', color=color_list[idx],
+                           linewidth=1.2, alpha=0.75)
             # for Citeseer
-            ax1.set_ylim(0.35,1.05)
-            ax2.set_ylim(15,78)
+            ax1.set_ylim(0.35, 1.05)
+            ax2.set_ylim(15, 78)
             # for Cora
             # ax1.set_ylim(0.55,1.45)
             # ax2.set_ylim(15,85)
-            line_handles+=[L1, L2]
+            line_handles += [L1, L2]
 
         ax1.set_ylabel('$MI_{c}$', fontsize=15, loc='top', rotation='horizontal', labelpad=-25.)
         ax2.set_ylabel('Accuracy(%)', fontsize=15, rotation='horizontal', labelpad=20.)
@@ -395,7 +403,7 @@ class Visualization():
         plt.savefig(f'./checkpoints/MI_%s_%s_%s.pdf' % (dataset_name, attacker, str(ptb_rate)))
 
     def hyperpara_visualization(self, dataset='cora', attacker='meta', ptb=0.2, strategy='PST'):
-        path = '%s_%s_%s_%s.txt'%(strategy, dataset, attacker, ptb)
+        path = '%s_%s_%s_%s.txt' % (strategy, dataset, attacker, ptb)
         epochs = []
         acc = []
         speed = []
@@ -406,10 +414,10 @@ class Visualization():
                 acc.append(acc_value)
                 speed.append(speed_value)
         if dataset == 'cora':
-            speed=np.array(speed)+0.74
+            speed = np.array(speed) + 0.74
             color = 'blue'
         elif dataset == 'citeseer':
-            speed=np.array(speed)+0.74
+            speed = np.array(speed) + 0.74
             color = 'green'
 
         fig, ax1 = plt.subplots()
@@ -417,7 +425,7 @@ class Visualization():
         ax1.set_ylabel('Speed', fontsize=16)
         ax1 = sns.barplot(x=epochs, y=speed, color=color, alpha=0.4, width=.6)
         bars = ax1.patches
-        #bars = ax1.bar(epochs, speed, color=color, alpha=0.6, label='Acc')
+        # bars = ax1.bar(epochs, speed, color=color, alpha=0.6, label='Acc')
         ax1.tick_params(axis='y', labelsize=16)
         ax1.tick_params(axis='x', labelsize=16)
 
@@ -425,10 +433,10 @@ class Visualization():
         for bar in bars:
             height = bar.get_height()
             ax1.annotate(f'{height:.2f}',
-                     xy=(bar.get_x() + bar.get_width() / 2, height),
-                     xytext=(0, 3),  # 3 points vertical offset
-                     textcoords="offset points", fontsize=16,
-                     ha='center', va='bottom')
+                         xy=(bar.get_x() + bar.get_width() / 2, height),
+                         xytext=(0, 3),  # 3 points vertical offset
+                         textcoords="offset points", fontsize=16,
+                         ha='center', va='bottom')
 
         # 创建第二个纵轴
         ax2 = ax1.twinx()
@@ -436,17 +444,16 @@ class Visualization():
         # 绘制Speed曲线
         ax2.set_ylabel('Acc', fontsize=16)
         ax2.plot(epochs, acc, color='red', marker='^', alpha=.5)
-        ax2.tick_params(axis='y', labelsize=16)#, labelcolor=color)
+        ax2.tick_params(axis='y', labelsize=16)  # , labelcolor=color)
         if dataset == 'cora':
-            ax1.set_ylim(1.35,2.0)
-            ax2.set_ylim(65,88)
+            ax1.set_ylim(1.35, 2.0)
+            ax2.set_ylim(65, 88)
         elif dataset == 'citeseer':
-            ax1.set_ylim(1.35,2.0)
-            ax2.set_ylim(60,78)
+            ax1.set_ylim(1.35, 2.0)
+            ax2.set_ylim(60, 78)
         plt.grid(True, linestyle='--', alpha=0.4)
         plt.tight_layout()
         plt.savefig(f'./checkpoints/%s_hyper_%s_%s_%s.pdf' % (strategy, dataset, attacker, str(ptb)))
-
 
 
 def rand_train_test_idx(label, train_prop=.5, valid_prop=.25):
@@ -474,6 +481,7 @@ def rand_train_test_idx(label, train_prop=.5, valid_prop=.25):
 
     return train_idx, valid_idx, test_idx
 
+
 def class_rand_splits(label, tr_num_per_class=20, val_num_per_class=30):
     train_idx, valid_idx, test_idx = [], [], []
     idx = torch.arange(label.shape[0])
@@ -484,8 +492,8 @@ def class_rand_splits(label, tr_num_per_class=20, val_num_per_class=30):
         n_i = idx_i.shape[0]
         rand_idx = idx_i[torch.randperm(n_i)]
         train_idx += rand_idx[:tr_num_per_class].tolist()
-        valid_idx += rand_idx[tr_num_per_class:tr_num_per_class+val_num_per_class].tolist()
-        test_idx += rand_idx[tr_num_per_class+val_num_per_class:].tolist()
+        valid_idx += rand_idx[tr_num_per_class:tr_num_per_class + val_num_per_class].tolist()
+        test_idx += rand_idx[tr_num_per_class + val_num_per_class:].tolist()
     train_idx = torch.as_tensor(train_idx)
     valid_idx = torch.as_tensor(valid_idx)
     test_idx = torch.as_tensor(test_idx)
@@ -493,33 +501,34 @@ def class_rand_splits(label, tr_num_per_class=20, val_num_per_class=30):
 
     return train_idx, valid_idx, test_idx
 
+
 def draw_results(results, model_name, test_models, x, step=50):
     results = np.array(results).T
-    #x = ['1%', '5%', '10%', '15%', '20%']#, '25%', '30%', '35%', '40%', '45%', '50%']#step*np.arange(0, results.shape[1], step=1)
+    # x = ['1%', '5%', '10%', '15%', '20%']#, '25%', '30%', '35%', '40%', '45%', '50%']#step*np.arange(0, results.shape[1], step=1)
     for result in results:
         plt.plot(x, result, marker='o', markersize=3)
     plt.legend(test_models)
-    plt.savefig(model_name+'.pdf')
+    plt.savefig(model_name + '.pdf')
+
 
 def draw_results_from_json(attacker, dataset, ptb_rates, model_list):
-
     results = []
     for pr in ptb_rates:
         pr = pr.split('%')[:-1][0]
-        pr = int(pr)/100.
-        file_path = os.path.join('checkpoints', 'checkpoints_'+attacker+'_'+dataset+'_'+str(pr)+'.json')
+        pr = int(pr) / 100.
+        file_path = os.path.join('checkpoints', 'checkpoints_' + attacker + '_' + dataset + '_' + str(pr) + '.json')
         with open(file_path, 'r') as f:
             log = f.read()
         log = json.loads(log)
-        acc=[]
+        acc = []
         for model in model_list:
             acc.append(log[model]['model_acc'])
         results.append(acc)
     results = np.array(results).T
-    #x = ['1%', '5%', '10%', '15%', '20%']#, '25%', '30%', '35%', '40%', '45%', '50%']#step*np.arange(0, results.shape[1], step=1)
+    # x = ['1%', '5%', '10%', '15%', '20%']#, '25%', '30%', '35%', '40%', '45%', '50%']#step*np.arange(0, results.shape[1], step=1)
     for result in results:
         plt.plot(ptb_rates, result, marker='o', markersize=3)
-    #plt.ylim(0.65, 0.875)
+    # plt.ylim(0.65, 0.875)
     for idx_model in range(len(model_list)):
         if model_list[idx_model] == 'PMLP_CL':
             model_list[idx_model] = 'GrFin-MLP'
@@ -528,7 +537,8 @@ def draw_results_from_json(attacker, dataset, ptb_rates, model_list):
         if model_list[idx_model] == 'PMLP_GCN':
             model_list[idx_model] = 'GrFin-MLP w/o finetune'
     plt.legend(model_list)
-    plt.savefig('Trend_'+attacker+'_'+dataset+'.pdf')
+    plt.savefig('Trend_' + attacker + '_' + dataset + '.pdf')
+
 
 def drwa_results_augmentation(attacker, dataset, ptb_rates, aug_list):
     results = []
@@ -556,26 +566,27 @@ def drwa_results_augmentation(attacker, dataset, ptb_rates, aug_list):
     # results[-1] = [0.829, 0.824, 0.816, 0.815, 0.802, 0.802]
     # cora
     results[-1] = [0.834, 0.826, 0.821, 0.816, 0.811, 0.808]
-    results = np.array(results) #-0.02
+    results = np.array(results)  # -0.02
     results *= 100
-    x = np.arange(results.shape[1])*3
+    x = np.arange(results.shape[1]) * 3
     width = 0.6
     for idx_result in range(results.shape[0]):
         result = results[idx_result]
-        W = (results.shape[0]-1)*width
-        #xx = (x*(W+3*width)-W/2.)+idx_result*width
-        xx = ((x-W/2.))+idx_result*width
+        W = (results.shape[0] - 1) * width
+        # xx = (x*(W+3*width)-W/2.)+idx_result*width
+        xx = ((x - W / 2.)) + idx_result * width
         plt.bar(xx, result, width=width, label=aug_name[idx_result])
         for idx_value in range(result.shape[0]):
             plt.text(xx[idx_value],
-                    result[idx_value] + 0.02, '%.1f' % result[idx_value],
+                     result[idx_value] + 0.02, '%.1f' % result[idx_value],
                      ha='center', va='bottom', fontsize=5)
-    plt.ylim((np.min(results)-3, np.max(results)+3))
+    plt.ylim((np.min(results) - 3, np.max(results) + 3))
     plt.legend()
     plt.xticks(x, ptb_rates, fontsize=10)
     plt.yticks(fontsize=7)
-    plt.savefig('Trend_Aug_'+attacker+'_'+dataset+'.pdf')
+    plt.savefig('Trend_Aug_' + attacker + '_' + dataset + '.pdf')
     return
+
 
 def load_npz(file_name, is_sparse=True):
     if not file_name.endswith('.npz'):
@@ -586,11 +597,11 @@ def load_npz(file_name, is_sparse=True):
         if is_sparse:
 
             adj = sp.csr_matrix((loader['adj_data'], loader['adj_indices'],
-                                        loader['adj_indptr']), shape=loader['adj_shape'])
+                                 loader['adj_indptr']), shape=loader['adj_shape'])
 
             if 'attr_data' in loader:
                 features = sp.csr_matrix((loader['attr_data'], loader['attr_indices'],
-                                             loader['attr_indptr']), shape=loader['attr_shape'])
+                                          loader['attr_indptr']), shape=loader['attr_shape'])
             else:
                 features = None
 
@@ -608,6 +619,7 @@ def load_npz(file_name, is_sparse=True):
 
     return adj, features, labels
 
+
 def get_adj(dataset, require_lcc=True):
     print('reading %s...' % dataset)
     _A_obs, _X_obs, _z_obs = load_npz(r'data/%s.npz' % dataset)
@@ -622,7 +634,7 @@ def get_adj(dataset, require_lcc=True):
     if require_lcc:
         lcc = largest_connected_components(_A_obs)
 
-        _A_obs = _A_obs[lcc][:,lcc]
+        _A_obs = _A_obs[lcc][:, lcc]
         _X_obs = _X_obs[lcc]
         _z_obs = _z_obs[lcc]
 
@@ -638,6 +650,7 @@ def get_adj(dataset, require_lcc=True):
 
     return _A_obs, _X_obs, _z_obs
 
+
 def largest_connected_components(adj, n_components=1):
     """Select the largest connected components in the graph.
     Parameters
@@ -650,8 +663,8 @@ def largest_connected_components(adj, n_components=1):
     print("Selecting {0} largest connected components".format(n_components))
     return nodes_to_keep
 
-def load_data(dataset="cora", val_size=0.1, test_size=0.1):
 
+def load_data(dataset="cora", val_size=0.1, test_size=0.1):
     print('Loading {} dataset...'.format(dataset))
     from torch_geometric.datasets import WikipediaNetwork
     if dataset in ['chameleon', 'squirrel', 'film', 'cornell', 'texas', 'wisconsin']:
@@ -725,74 +738,76 @@ def load_hetro(dataset_name):
 
     adj = sys_normalized_adjacency(g)
     adj_i = sys_normalized_adjacency_i(g)
-    #adj = sparse_mx_to_torch_sparse_tensor(adj)
-    #adj_i = sparse_mx_to_torch_sparse_tensor(adj_i)
+    # adj = sparse_mx_to_torch_sparse_tensor(adj)
+    # adj_i = sparse_mx_to_torch_sparse_tensor(adj_i)
 
     return adj, features, labels
 
+
 def load_hetro_old(dataname):
-        path = '/home/user/Codes/DeepRobust-master/deeprobust/graph/data/'
-        graph_adjacency_list_file_path = os.path.join(path, dataname, 'out1_graph_edges.txt')
-        graph_node_features_and_labels_file_path = os.path.join(path, dataname,
-                                                                f'out1_node_feature_label.txt')
+    path = '/home/user/Codes/DeepRobust-master/deeprobust/graph/data/'
+    graph_adjacency_list_file_path = os.path.join(path, dataname, 'out1_graph_edges.txt')
+    graph_node_features_and_labels_file_path = os.path.join(path, dataname,
+                                                            f'out1_node_feature_label.txt')
 
-        G = nx.DiGraph()
-        graph_node_features_dict = {}
-        graph_labels_dict = {}
+    G = nx.DiGraph()
+    graph_node_features_dict = {}
+    graph_labels_dict = {}
 
-        if dataname == 'film':
-            with open(graph_node_features_and_labels_file_path) as graph_node_features_and_labels_file:
-                graph_node_features_and_labels_file.readline()
-                for line in graph_node_features_and_labels_file:
-                    line = line.rstrip().split('\t')
-                    assert (len(line) == 3)
-                    assert (int(line[0]) not in graph_node_features_dict and int(line[0]) not in graph_labels_dict)
-                    feature_blank = np.zeros(932, dtype=np.uint8)
-                    feature_blank[np.array(line[1].split(','), dtype=np.uint16)] = 1
-                    graph_node_features_dict[int(line[0])] = feature_blank
-                    graph_labels_dict[int(line[0])] = int(line[2])
-        else:
-            with open(graph_node_features_and_labels_file_path) as graph_node_features_and_labels_file:
-                graph_node_features_and_labels_file.readline()
-                for line in graph_node_features_and_labels_file:
-                    line = line.rstrip().split('\t')
-                    assert (len(line) == 3)
-                    assert (int(line[0]) not in graph_node_features_dict and int(line[0]) not in graph_labels_dict)
-                    graph_node_features_dict[int(line[0])] = np.array(line[1].split(','), dtype=np.uint8)
-                    graph_labels_dict[int(line[0])] = int(line[2])
-
-        with open(graph_adjacency_list_file_path) as graph_adjacency_list_file:
-            graph_adjacency_list_file.readline()
-            for line in graph_adjacency_list_file:
+    if dataname == 'film':
+        with open(graph_node_features_and_labels_file_path) as graph_node_features_and_labels_file:
+            graph_node_features_and_labels_file.readline()
+            for line in graph_node_features_and_labels_file:
                 line = line.rstrip().split('\t')
-                assert (len(line) == 2)
-                if int(line[0]) not in G:
-                    G.add_node(int(line[0]), features=graph_node_features_dict[int(line[0])],
-                               label=graph_labels_dict[int(line[0])])
-                if int(line[1]) not in G:
-                    G.add_node(int(line[1]), features=graph_node_features_dict[int(line[1])],
-                               label=graph_labels_dict[int(line[1])])
-                G.add_edge(int(line[0]), int(line[1]))
+                assert (len(line) == 3)
+                assert (int(line[0]) not in graph_node_features_dict and int(line[0]) not in graph_labels_dict)
+                feature_blank = np.zeros(932, dtype=np.uint8)
+                feature_blank[np.array(line[1].split(','), dtype=np.uint16)] = 1
+                graph_node_features_dict[int(line[0])] = feature_blank
+                graph_labels_dict[int(line[0])] = int(line[2])
+    else:
+        with open(graph_node_features_and_labels_file_path) as graph_node_features_and_labels_file:
+            graph_node_features_and_labels_file.readline()
+            for line in graph_node_features_and_labels_file:
+                line = line.rstrip().split('\t')
+                assert (len(line) == 3)
+                assert (int(line[0]) not in graph_node_features_dict and int(line[0]) not in graph_labels_dict)
+                graph_node_features_dict[int(line[0])] = np.array(line[1].split(','), dtype=np.uint8)
+                graph_labels_dict[int(line[0])] = int(line[2])
 
-        adj = nx.adjacency_matrix(G, sorted(G.nodes()))
-        features = np.array(
-            [features for _, features in sorted(G.nodes(data='features'), key=lambda x: x[0])])
-        labels = np.array(
-            [label for _, label in sorted(G.nodes(data='label'), key=lambda x: x[0])])
+    with open(graph_adjacency_list_file_path) as graph_adjacency_list_file:
+        graph_adjacency_list_file.readline()
+        for line in graph_adjacency_list_file:
+            line = line.rstrip().split('\t')
+            assert (len(line) == 2)
+            if int(line[0]) not in G:
+                G.add_node(int(line[0]), features=graph_node_features_dict[int(line[0])],
+                           label=graph_labels_dict[int(line[0])])
+            if int(line[1]) not in G:
+                G.add_node(int(line[1]), features=graph_node_features_dict[int(line[1])],
+                           label=graph_labels_dict[int(line[1])])
+            G.add_edge(int(line[0]), int(line[1]))
 
-        rowsum = np.array(features.sum(1))
-        r_inv = np.power(rowsum, -1).flatten()
-        r_inv[np.isinf(r_inv)] = 0.
-        r_mat_inv = sp.diags(r_inv)
-        features = r_mat_inv.dot(features)
-        features = sp.csr_matrix(features)
+    adj = nx.adjacency_matrix(G, sorted(G.nodes()))
+    features = np.array(
+        [features for _, features in sorted(G.nodes(data='features'), key=lambda x: x[0])])
+    labels = np.array(
+        [label for _, label in sorted(G.nodes(data='label'), key=lambda x: x[0])])
 
-        return sp.csr_matrix(adj), features, labels
+    rowsum = np.array(features.sum(1))
+    r_inv = np.power(rowsum, -1).flatten()
+    r_inv[np.isinf(r_inv)] = 0.
+    r_mat_inv = sp.diags(r_inv)
+    features = r_mat_inv.dot(features)
+    features = sp.csr_matrix(features)
+
+    return sp.csr_matrix(adj), features, labels
+
 
 def load_ogb_dataset(dataname, data_dir='./data/'):
     from ogb.nodeproppred import NodePropPredDataset
     dataset = NCDataset(dataname)
-    ogb_dataset = NodePropPredDataset(name=dataname, root=os.path.join(data_dir,dataname))
+    ogb_dataset = NodePropPredDataset(name=dataname, root=os.path.join(data_dir, dataname))
     dataset.graph = ogb_dataset.graph
     dataset.graph['edge_index'] = torch.as_tensor(dataset.graph['edge_index'])
     features = torch.as_tensor(dataset.graph['node_feat'])
@@ -802,6 +817,7 @@ def load_ogb_dataset(dataname, data_dir='./data/'):
         tensor_split_idx = {key: torch.as_tensor(
             split_idx[key]) for key in split_idx}
         return tensor_split_idx
+
     dataset.get_idx_split = ogb_idx_to_tensor  # ogb_dataset.get_idx_split
     dataset.label = torch.as_tensor(ogb_dataset.labels).reshape(-1, 1)
 
@@ -809,8 +825,8 @@ def load_ogb_dataset(dataname, data_dir='./data/'):
     from scipy.sparse import csr_matrix
     from torch_sparse import SparseTensor
     adj = SparseTensor.from_edge_index(dataset.graph['edge_index']).t()
-    #row, col = edge_index.cpu().numpy()[1], edge_index.cpu().numpy()[0]
-    #adj = csr_matrix((edge_weight.cpu().numpy(), (row, col)))
+    # row, col = edge_index.cpu().numpy()[1], edge_index.cpu().numpy()[0]
+    # adj = csr_matrix((edge_weight.cpu().numpy(), (row, col)))
 
     return adj, features, dataset.label
 
@@ -835,15 +851,17 @@ def preprocess(adj, features, labels, preprocess_adj=False, preprocess_feature=F
 
     return adj, features, labels
 
+
 def preprocess_hetro_features(features):
     """Row-normalize feature matrix and convert to tuple representation"""
     rowsum = np.array(features.sum(1))
-    rowsum = (rowsum==0)*1+rowsum
+    rowsum = (rowsum == 0) * 1 + rowsum
     r_inv = np.power(rowsum, -1).flatten()
     r_inv[np.isinf(r_inv)] = 0.
     r_mat_inv = sp.diags(r_inv)
     features = r_mat_inv.dot(features)
     return features
+
 
 def normalize_feature(mx):
     """Row-normalize sparse matrix"""
@@ -854,15 +872,17 @@ def normalize_feature(mx):
     mx = r_mat_inv.dot(mx)
     return mx
 
+
 def normalize_adj(mx):
     """Row-normalize sparse matrix"""
     rowsum = np.array(mx.sum(1))
-    r_inv = np.power(rowsum, -1/2).flatten()
+    r_inv = np.power(rowsum, -1 / 2).flatten()
     r_inv[np.isinf(r_inv)] = 0.
     r_mat_inv = sp.diags(r_inv)
     mx = r_mat_inv.dot(mx)
     mx = mx.dot(r_mat_inv)
     return mx
+
 
 def normalize_adj_tensor(adj, sparse=False):
     if sparse:
@@ -872,38 +892,42 @@ def normalize_adj_tensor(adj, sparse=False):
     else:
         mx = adj + torch.eye(adj.shape[0]).to(adj.device)
         rowsum = mx.sum(1)
-        r_inv = rowsum.pow(-1/2).flatten()
+        r_inv = rowsum.pow(-1 / 2).flatten()
         r_inv[torch.isinf(r_inv)] = 0.
         r_mat_inv = torch.diag(r_inv)
         mx = r_mat_inv @ mx
         mx = mx @ r_mat_inv
     return mx
 
+
 def sys_normalized_adjacency(adj):
-   adj = sp.coo_matrix(adj)
-   #adj = adj + sp.eye(adj.shape[0])
-   row_sum = np.array(adj.sum(1))
-   row_sum=(row_sum==0)*1+row_sum
-   d_inv_sqrt = np.power(row_sum, -0.5).flatten()
-   d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.
-   d_mat_inv_sqrt = sp.diags(d_inv_sqrt)
-   return d_mat_inv_sqrt.dot(adj).dot(d_mat_inv_sqrt).tocoo()
+    adj = sp.coo_matrix(adj)
+    # adj = adj + sp.eye(adj.shape[0])
+    row_sum = np.array(adj.sum(1))
+    row_sum = (row_sum == 0) * 1 + row_sum
+    d_inv_sqrt = np.power(row_sum, -0.5).flatten()
+    d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.
+    d_mat_inv_sqrt = sp.diags(d_inv_sqrt)
+    return d_mat_inv_sqrt.dot(adj).dot(d_mat_inv_sqrt).tocoo()
+
 
 def sys_normalized_adjacency_i(adj):
-   adj = sp.coo_matrix(adj)
-   adj = adj + sp.eye(adj.shape[0])
-   row_sum = np.array(adj.sum(1))
-   row_sum=(row_sum==0)*1+row_sum
-   d_inv_sqrt = np.power(row_sum, -0.5).flatten()
-   d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.
-   d_mat_inv_sqrt = sp.diags(d_inv_sqrt)
-   return d_mat_inv_sqrt.dot(adj).dot(d_mat_inv_sqrt).tocoo()
+    adj = sp.coo_matrix(adj)
+    adj = adj + sp.eye(adj.shape[0])
+    row_sum = np.array(adj.sum(1))
+    row_sum = (row_sum == 0) * 1 + row_sum
+    d_inv_sqrt = np.power(row_sum, -0.5).flatten()
+    d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.
+    d_mat_inv_sqrt = sp.diags(d_inv_sqrt)
+    return d_mat_inv_sqrt.dot(adj).dot(d_mat_inv_sqrt).tocoo()
+
 
 def accuracy(output, labels):
     preds = output.max(1)[1].type_as(labels)
     correct = preds.eq(labels).double()
     correct = correct.sum()
     return correct / len(labels)
+
 
 def sparse_mx_to_torch_sparse_tensor(sparse_mx):
     """Convert a scipy sparse matrix to a torch sparse tensor."""
@@ -914,14 +938,15 @@ def sparse_mx_to_torch_sparse_tensor(sparse_mx):
     shape = torch.Size(sparse_mx.shape)
     return torch.sparse.FloatTensor(indices, values, shape)
 
+
 def to_scipy(sparse_tensor):
     """Convert a scipy sparse matrix to a torch sparse tensor."""
     values = sparse_tensor._values()
     indices = sparse_tensor._indices()
     return sp.csr_matrix((values.cpu().numpy(), indices.cpu().numpy()))
 
-def get_train_val_test(idx, train_size, val_size, test_size, stratify, seed):
 
+def get_train_val_test(idx, train_size, val_size, test_size, stratify, seed):
     if seed is not None:
         np.random.seed(seed)
 
@@ -948,6 +973,7 @@ def unravel_index(index, array_shape):
     cols = index % array_shape[1]
     return rows, cols
 
+
 def likelihood_ratio_filter(node_pairs, modified_adjacency, original_adjacency, d_min, threshold=0.004):
     """
     Filter the input node pairs based on the likelihood ratio test proposed by Zügner et al. 2018, see
@@ -965,11 +991,13 @@ def likelihood_ratio_filter(node_pairs, modified_adjacency, original_adjacency, 
     concat_degree_sequence = torch.cat((current_degree_sequence, original_degree_sequence))
 
     # Compute the log likelihood values of the original, modified, and combined degree sequences.
-    ll_orig, alpha_orig, n_orig, sum_log_degrees_original = degree_sequence_log_likelihood(original_degree_sequence, d_min)
+    ll_orig, alpha_orig, n_orig, sum_log_degrees_original = degree_sequence_log_likelihood(original_degree_sequence,
+                                                                                           d_min)
     ll_current, alpha_current, n_current, sum_log_degrees_current = degree_sequence_log_likelihood(
         current_degree_sequence, d_min)
 
-    ll_comb, alpha_comb, n_comb, sum_log_degrees_combined = degree_sequence_log_likelihood(concat_degree_sequence, d_min)
+    ll_comb, alpha_comb, n_comb, sum_log_degrees_combined = degree_sequence_log_likelihood(concat_degree_sequence,
+                                                                                           d_min)
 
     # Compute the log likelihood ratio
     current_ratio = -2 * ll_comb + 2 * (ll_orig + ll_current)
@@ -977,7 +1005,8 @@ def likelihood_ratio_filter(node_pairs, modified_adjacency, original_adjacency, 
     # Compute new log likelihood values that would arise if we add/remove the edges corresponding to each node pair.
 
     new_lls, new_alphas, new_ns, new_sum_log_degrees = updated_log_likelihood_for_edge_changes(node_pairs,
-                                                                                               modified_adjacency, d_min)
+                                                                                               modified_adjacency,
+                                                                                               d_min)
 
     # Combination of the original degree distribution with the distributions corresponding to each node pair.
     n_combined = n_orig + new_ns
@@ -1018,8 +1047,8 @@ def degree_sequence_log_likelihood(degree_sequence, d_min):
     ll = compute_log_likelihood(n, alpha, sum_log_degrees, d_min)
     return ll, alpha, n, sum_log_degrees
 
-def updated_log_likelihood_for_edge_changes(node_pairs, adjacency_matrix, d_min):
 
+def updated_log_likelihood_for_edge_changes(node_pairs, adjacency_matrix, d_min):
     # For each node pair find out whether there is an edge or not in the input adjacency matrix.
 
     edge_entries_before = adjacency_matrix[node_pairs.T]
@@ -1029,7 +1058,6 @@ def updated_log_likelihood_for_edge_changes(node_pairs, adjacency_matrix, d_min)
     D_G = degree_sequence[degree_sequence >= d_min.item()]
     sum_log_degrees = torch.log(D_G).sum()
     n = len(D_G)
-
 
     deltas = -2 * edge_entries_before + 1
     d_edges_before = degree_sequence[node_pairs]
@@ -1056,20 +1084,21 @@ def update_sum_log_degrees(sum_log_degrees_before, n_old, d_old, d_new, d_min):
 
     # Update the sum by subtracting the old values and then adding the updated logs of the degrees.
     sum_log_degrees_after = sum_log_degrees_before - (torch.log(torch.clamp(d_old_in_range, min=1))).sum(1) \
-                                 + (torch.log(torch.clamp(d_new_in_range, min=1))).sum(1)
+                            + (torch.log(torch.clamp(d_new_in_range, min=1))).sum(1)
 
     # Update the number of degrees >= d_min
-    new_n = n_old - (old_in_range!=0).sum(1) + (new_in_range!=0).sum(1)
+    new_n = n_old - (old_in_range != 0).sum(1) + (new_in_range != 0).sum(1)
     new_n = new_n.float()
     return sum_log_degrees_after, new_n
 
-def compute_alpha(n, sum_log_degrees, d_min):
 
+def compute_alpha(n, sum_log_degrees, d_min):
     try:
-        alpha =  1 + n / (sum_log_degrees - n * torch.log(d_min - 0.5))
+        alpha = 1 + n / (sum_log_degrees - n * torch.log(d_min - 0.5))
     except:
-        alpha =  1 + n / (sum_log_degrees - n * np.log(d_min - 0.5))
+        alpha = 1 + n / (sum_log_degrees - n * np.log(d_min - 0.5))
     return alpha
+
 
 def compute_log_likelihood(n, alpha, sum_log_degrees, d_min):
     # Log likelihood under alpha
@@ -1079,6 +1108,7 @@ def compute_log_likelihood(n, alpha, sum_log_degrees, d_min):
         ll = n * np.log(alpha) + n * alpha * np.log(d_min) + (alpha + 1) * sum_log_degrees
 
     return ll
+
 
 def ravel_multiple_indices(ixs, shape, reverse=False):
     """
@@ -1090,5 +1120,3 @@ def ravel_multiple_indices(ixs, shape, reverse=False):
         return ixs[:, 1] * shape[1] + ixs[:, 0]
 
     return ixs[:, 0] * shape[1] + ixs[:, 1]
-
-

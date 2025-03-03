@@ -13,6 +13,7 @@ import GCL.augmentors as Aug
 from models import *
 from deeprobust.graph.defense import *
 
+
 class GNN(nn.Module):
     def __init__(self, in_channels, hidden_channels,
                  out_channels, num_layers=2, dropout=0.5, num_node=0):
@@ -49,6 +50,7 @@ class GNN(nn.Module):
         if self.ff_bias: x = x + self.fcs[-1].bias
         return x
 
+
 class BasicGNN(nn.Module):
     def __init__(self, args, nnodes, nfeat, nclass, nhid, dropout,
                  device, finetune_epoch=3, use_mp=False,
@@ -72,7 +74,7 @@ class BasicGNN(nn.Module):
                                           nhid=nhid, dropout=dropout)
         elif basic_model == 'SimP-GCN':
             self.model = SimPGCN(nnodes=nnodes, nfeat=nfeat, nclass=nclass,
-                    nhid=nhid, dropout=dropout, device=device)
+                                 nhid=nhid, dropout=dropout, device=device)
         else:
             self.model = GNN(nfeat, nhid, nclass).to(device)
         self.basic_model = basic_model
@@ -81,26 +83,26 @@ class BasicGNN(nn.Module):
         self.um = use_mp
 
     def X_aug(self, features, edge_index, idx_train, ratio=-1):
-        if ratio<=0:
+        if ratio <= 0:
             return True, torch.ones_like(features).to(features.device), edge_index
-        elif ratio==1:
+        elif ratio == 1:
             return True, features, edge_index
         augor = Aug.NodeDropping(pn=ratio)
         new_features, new_edge_index, edge_weight = augor(features, edge_index)
         return True, new_features, new_edge_index
 
-    def A_aug(self, features, edge_index, idx_train,  ratio=-1):
-        if ratio<=0:
+    def A_aug(self, features, edge_index, idx_train, ratio=-1):
+        if ratio <= 0:
             return False, features, edge_index
-        elif ratio==1:
+        elif ratio == 1:
             return True, features, edge_index
         edge_num = edge_index.shape[1]
-        edge_choiced = np.random.choice(np.arange(0, edge_num), int(ratio*edge_num), replace=False)
+        edge_choiced = np.random.choice(np.arange(0, edge_num), int(ratio * edge_num), replace=False)
         edge_index = edge_index.T[edge_choiced].T
         return True, features, edge_index
 
     def pst(self, epoch, features, edge_index, idx_train):
-        stages = {0:0.25, self.epochs - 150:0.5, self.epochs - 100:0.75, self.epochs - 50:1.0}
+        stages = {0: 0.25, self.epochs - 150: 0.5, self.epochs - 100: 0.75, self.epochs - 50: 1.0}
         try:
             ratio = stages[epoch]
             um, features_r, edge_index_r = self.A_aug(features, edge_index, idx_train, ratio)
@@ -120,11 +122,12 @@ class BasicGNN(nn.Module):
             row, col, data, shape = adj_csr._indices()[0], adj_csr._indices()[1], adj_csr._values(), adj_csr.size()
             adj_csr = sp.csr_matrix((data, (row, col)), shape=shape)
             features_csr = features.clone().detach().cpu().to_sparse()
-            row, col, data, shape = features_csr._indices()[0], features_csr._indices()[1], features_csr._values(), features_csr.size()
+            row, col, data, shape = features_csr._indices()[0], features_csr._indices()[
+                1], features_csr._values(), features_csr.size()
             features_csr = sp.csr_matrix((data, (row, col)), shape=shape)
             adj_csr = self.gcn_jaccard.drop_dissimilar_edges(features_csr, adj_csr)
             mod_adj_p = torch.FloatTensor(adj_csr.todense()).to(mod_adj.device)
-        #edge_index = mod_adj_p.nonzero().t().contiguous()
+        # edge_index = mod_adj_p.nonzero().t().contiguous()
 
         if self.trick == 'SF':
             x, x1, x2 = features.clone().detach().cpu().numpy(), features.clone().detach().cpu().numpy(), \
@@ -168,6 +171,7 @@ class BasicGNN(nn.Module):
         output = F.log_softmax(output, dim=1)
         acc_test = utils.accuracy(output[idx_test], labels[idx_test])
         return output, acc_test.item()
+
 
 class ReconGNN(nn.Module):
     def __init__(self, args, nnodes, nfeat, nclass, nhid, dropout,
@@ -221,7 +225,6 @@ class ReconGNN(nn.Module):
                 self.A_recon = F.normalize(self.A_recon.detach().clone(), dim=1)
                 loss_rec = torch.square(self.A_recon - mod_adj).sum(1).mean()
 
-
             # if epoch == self.epochs - 3:
             #     um, features_r, edge_index_r = self.A_aug(features, edge_index, idx_train, ratio=0.9)
             #     #um, features_r, edge_index_r = self.X_aug(features, edge_index, idx_train, ratio=1.0)
@@ -243,7 +246,7 @@ class ReconGNN(nn.Module):
             # output = self.model(features, edge_index, use_mp=False)
             output_log = F.log_softmax(output, dim=1)
             loss_train = F.nll_loss(output_log[idx_train], labels[idx_train])
-            loss_train += 1. * loss_cl - 0.5*loss_rec
+            loss_train += 1. * loss_cl - 0.5 * loss_rec
             loss_train.backward()
             optimizer.step()
         acc_train = utils.accuracy(output[idx_train], labels[idx_train])
@@ -257,6 +260,7 @@ class ReconGNN(nn.Module):
         output = F.log_softmax(output, dim=1)
         acc_test = utils.accuracy(output[idx_test], labels[idx_test])
         return acc_test.item()
+
 
 class MyNoisyGCN(nn.Module):
     def __init__(self, in_channels, hidden_channels,
@@ -320,6 +324,7 @@ class MyNoisyGCN(nn.Module):
         if self.ff_bias: x = x + self.fcs[-1].bias
         return x
 
+
 class MyGCNJaccard(nn.Module):
     def __init__(self, in_channels, hidden_channels,
                  out_channels, num_layers=2, dropout=0.5, num_node=0):
@@ -328,7 +333,7 @@ class MyGCNJaccard(nn.Module):
         self.dropout = dropout
         self.ff_bias = True  # Use bias for FF layers in default
         self.gcn_jaccard = GCNJaccard(nfeat=in_channels, nclass=out_channels,
-                           nhid=hidden_channels, dropout=dropout)
+                                      nhid=hidden_channels, dropout=dropout)
 
         self.bns = nn.BatchNorm1d(hidden_channels, affine=False, track_running_stats=False)
         self.activation = F.relu

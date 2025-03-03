@@ -19,7 +19,7 @@ def gcn_conv(h, edge_index, masked_adj=None):
     deg_dst = deg[dst].pow(-0.5)
     deg_dst.masked_fill_(deg_dst == float('inf'), 0)
     edge_weight = deg_src * deg_dst
-    #edge_weight = torch.ones(edge_index.shape[1]).to(edge_index.device)
+    # edge_weight = torch.ones(edge_index.shape[1]).to(edge_index.device)
 
     a = torch.sparse_coo_tensor(edge_index, edge_weight, torch.Size([N, N])).t()
     h_prime = a @ h

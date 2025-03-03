@@ -10,6 +10,7 @@ from noisy_gcn import Noisy_GCN
 
 MODIFIED_PATH = r'ModifiedGraph'
 
+
 def get_gpu_mem_info(gpu_id=0):
     import pynvml
     pynvml.nvmlInit()
@@ -23,9 +24,9 @@ def get_gpu_mem_info(gpu_id=0):
     free = round(meminfo.free / 1024 / 1024, 2)
     return total, used, free
 
+
 def test_defence(args, features_tensor, ori_adj_tensor, mod_adj_tensor,
                  labels_tensor, model_name, idx_train, idx_test):
-
     # convert data type
     labels = labels_tensor.detach().cpu().numpy()
     features = features_tensor.detach().cpu().to_sparse()
@@ -43,7 +44,7 @@ def test_defence(args, features_tensor, ori_adj_tensor, mod_adj_tensor,
         model = BasicGNN(args, nnodes=mod_adj_tensor.shape[0], nfeat=features_tensor.shape[1], nclass=labels.max() + 1,
                          nhid=args.hidden, dropout=args.dropout, device=device, finetune_epoch=0, use_mp=True,
                          basic_model=model_name)
-        memo = 0#_, memo, _ = get_gpu_mem_info(int(args.gpu))
+        memo = 0  # _, memo, _ = get_gpu_mem_info(int(args.gpu))
         if args.attacker in ['pgd']:
             model.fit(features_tensor, ori_adj_tensor, labels_tensor, idx_train, idx_test)
         else:
@@ -59,7 +60,7 @@ def test_defence(args, features_tensor, ori_adj_tensor, mod_adj_tensor,
         model = BasicGNN(args, nnodes=mod_adj_tensor.shape[0], nfeat=features_tensor.shape[1], nclass=labels.max() + 1,
                          nhid=args.hidden, dropout=args.dropout, device=device, finetune_epoch=3, use_mp=False,
                          basic_model=basic_model_name, trick=trick_name)
-        memo = 0#_, memo, _ = get_gpu_mem_info(int(args.gpu))
+        memo = 0  # _, memo, _ = get_gpu_mem_info(int(args.gpu))
         if args.attacker in ['pgd']:
             model.fit(features_tensor, ori_adj_tensor, labels_tensor, idx_train, idx_test)
         else:
@@ -68,9 +69,9 @@ def test_defence(args, features_tensor, ori_adj_tensor, mod_adj_tensor,
         acc_target = 0
     elif model_name == 'ReconGNN':
         model = ReconGNN(args, nnodes=mod_adj_tensor.shape[0], nfeat=features_tensor.shape[1], nclass=labels.max() + 1,
-                       nhid=args.hidden, dropout=args.dropout, device=device, finetune_epoch=3)
+                         nhid=args.hidden, dropout=args.dropout, device=device, finetune_epoch=3)
         model.fit(features_tensor, mod_adj_tensor, labels_tensor, idx_train, idx_val)
-        #_, memo, _ = get_gpu_mem_info(int(args.gpu))
+        # _, memo, _ = get_gpu_mem_info(int(args.gpu))
         memo = 0
         output, acc_global = model.test(features_tensor, mod_adj_tensor, labels_tensor, idx_test)
         acc_target = 0
@@ -78,11 +79,11 @@ def test_defence(args, features_tensor, ori_adj_tensor, mod_adj_tensor,
         model = BasicGNN(args, nnodes=mod_adj_tensor.shape[0], nfeat=features_tensor.shape[1], nclass=labels.max() + 1,
                          nhid=args.hidden, dropout=args.dropout, device=device, finetune_epoch=3)
         model.fit(features_tensor, mod_adj_tensor, labels_tensor, idx_train, idx_val)
-        #_, memo, _ = get_gpu_mem_info(int(args.gpu))
+        # _, memo, _ = get_gpu_mem_info(int(args.gpu))
         memo = 0
         output, acc_global = model.test(features_tensor, mod_adj_tensor, labels_tensor, idx_test)
         acc_target = 0
-        #Visualization().embedding_visualization(model_name, args.dataset, output[idx_test], labels[idx_test])
+        # Visualization().embedding_visualization(model_name, args.dataset, output[idx_test], labels[idx_test])
     elif model_name == 'NoisyGCN':
         best_acc_val = 0
         for beta in np.arange(0.1, args.beta_max, args.beta_min):
@@ -114,7 +115,7 @@ def test_defence(args, features_tensor, ori_adj_tensor, mod_adj_tensor,
         model = RGCN(nnodes=mod_adj.shape[0], nfeat=features.shape[1], nclass=labels.max() + 1,
                      nhid=args.hidden, dropout=args.dropout, device=device)
         model.fit(features, mod_adj, labels, idx_train, idx_val, train_iters=args.epochs, verbose=False)
-        #_, memo, _ = get_gpu_mem_info(int(args.gpu))
+        # _, memo, _ = get_gpu_mem_info(int(args.gpu))
         time_during = time.time() - time_start
         print(time_during)
         acc_global = model.test(idx_test)
@@ -122,23 +123,23 @@ def test_defence(args, features_tensor, ori_adj_tensor, mod_adj_tensor,
 
     elif model_name == 'Simp-GCN':
         model = SimPGCN(nnodes=features.shape[0], nfeat=features.shape[1], nclass=labels.max() + 1,
-                    nhid=args.hidden, dropout=args.dropout, device=device)
+                        nhid=args.hidden, dropout=args.dropout, device=device)
         model.to(device)
         model.fit(features, mod_adj, labels, idx_train, idx_val, train_iters=args.epochs, verbose=False)
-        #_, memo, _ = get_gpu_mem_info(int(args.gpu))
+        # _, memo, _ = get_gpu_mem_info(int(args.gpu))
         acc_global = model.test(idx_test)
         acc_target = 0
 
     elif model_name == 'ProGNN':
-        labels = torch.tensor(labels,dtype=torch.int64).to(device)
+        labels = torch.tensor(labels, dtype=torch.int64).to(device)
         gnn = deeprobust.graph.defense.GCN(nfeat=features.shape[1],
-            nhid=args.hidden,
-            nclass=int(labels.max().item() + 1),
-            dropout=args.dropout, device=device)
+                                           nhid=args.hidden,
+                                           nclass=int(labels.max().item() + 1),
+                                           dropout=args.dropout, device=device)
         gnn.to(device)
         model = ProGNN(gnn, args, device)
         model.fit(features_tensor, mod_adj_tensor, labels, idx_train, idx_val)
-        #_, memo, _ = get_gpu_mem_info(int(args.gpu))
+        # _, memo, _ = get_gpu_mem_info(int(args.gpu))
         acc_global = model.test(features_tensor, labels, idx_test)
         acc_target = 0
 
@@ -147,7 +148,7 @@ def test_defence(args, features_tensor, ori_adj_tensor, mod_adj_tensor,
                            nhid=args.hidden, dropout=args.dropout, device=device)
         model = model.to(device)
         model.fit(features, mod_adj, labels, idx_train, idx_val, train_iters=args.epochs, threshold=0.01, verbose=False)
-        #_, memo, _ = get_gpu_mem_info(int(args.gpu))
+        # _, memo, _ = get_gpu_mem_info(int(args.gpu))
         model.eval()
         acc_global = model.test(idx_test)
         acc_target = 0
@@ -159,12 +160,13 @@ def test_defence(args, features_tensor, ori_adj_tensor, mod_adj_tensor,
 
         model = model.to(device)
         model.fit(features, mod_adj, labels, idx_train, idx_val, k=args.k, verbose=False)
-        #_, memo, _ = get_gpu_mem_info(int(args.gpu))
+        # _, memo, _ = get_gpu_mem_info(int(args.gpu))
         model.eval()
         acc_global = model.test(idx_test)
         acc_target = 0
 
     return acc_global, acc_target, memo, model
+
 
 if __name__ == '__main__':
 
@@ -207,7 +209,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=15, help='Random seed.')
     parser.add_argument('--step', type=int, default=100)
     parser.add_argument('--gpu', type=str, default='0')
-    parser.add_argument('--attacker', type=str, default='meta', choices=['grad','meta'])
+    parser.add_argument('--attacker', type=str, default='meta', choices=['grad', 'meta'])
     parser.add_argument('--dataset', type=str, default='citeseer',
                         choices=['cora', 'citeseer', 'pubmed'])
     parser.add_argument('-target_class', type=int, default=0, help='target class')
@@ -216,7 +218,7 @@ if __name__ == '__main__':
     cuda = torch.cuda.is_available()
     device = torch.device('cuda:%s' % args.gpu if torch.cuda.is_available() else "cpu")
 
-    data = Dataset(root='./data/', name=args.dataset, seed=args.seed, setting='nettack')#nettack #prognn
+    data = Dataset(root='./data/', name=args.dataset, seed=args.seed, setting='nettack')  # nettack #prognn
     adj, features, labels = data.adj, data.features, data.labels
     adj, features, labels = preprocess(adj, features, labels, preprocess_adj=False)
     idx_train, idx_val, idx_test = data.idx_train, data.idx_val, data.idx_test
@@ -226,21 +228,21 @@ if __name__ == '__main__':
         labels = labels.to(device)
 
     # test robust performance
-    vanilla_models = ['GCN', 'SGC', 'APPNP', 'GCNII','GCN_SF', 'SGC_SF', 'APPNP_SF', 'GCNII_SF',
-                   'GCN_PST', 'SGC_PST', 'APPNP_PST', 'GCNII_PST']
-    robust_models = ['GCN-Jacard', 'GCN-Jacard_PST', 'GCN-Jacard_SF', 'NoisyGCN','NoisyGCN_PST','NoisyGCN_SF',
+    vanilla_models = ['GCN', 'SGC', 'APPNP', 'GCNII', 'GCN_SF', 'SGC_SF', 'APPNP_SF', 'GCNII_SF',
+                      'GCN_PST', 'SGC_PST', 'APPNP_PST', 'GCNII_PST']
+    robust_models = ['GCN-Jacard', 'GCN-Jacard_PST', 'GCN-Jacard_SF', 'NoisyGCN', 'NoisyGCN_PST', 'NoisyGCN_SF',
                      'EvenNet', 'EvenNet_PST', 'EvenNet_SF', 'Simp-GCN', 'Simp-GCN_PST', 'Simp-GCN_SF']
     test_models = ['GCN_PST', 'GCN_SF']
     ptb_rates = ['0%', '5%', '10%', '20%']
 
     for pr in ptb_rates:
         pr = pr.split('%')[:-1][0]
-        pr = int(pr)/100.
-        if pr<=0:
+        pr = int(pr) / 100.
+        if pr <= 0:
             mod_adj = adj
         else:
-            mod_adj = sparse.load_npz("ModifiedGraph/%s_%s_adj_%s.npz" % (args.dataset,args.attacker,pr)) 
-            mod_adj,_,_ = preprocess(mod_adj, features, labels, preprocess_adj=False)
+            mod_adj = sparse.load_npz("ModifiedGraph/%s_%s_adj_%s.npz" % (args.dataset, args.attacker, pr))
+            mod_adj, _, _ = preprocess(mod_adj, features, labels, preprocess_adj=False)
         mod_adj = mod_adj.to(device)
         model_acc_global_mean, model_acc_target_mean, model_acc_global_std, model_acc_target_std, \
             model_running_time, model_memo = [], [], [], [], [], []
@@ -256,8 +258,8 @@ if __name__ == '__main__':
                 time_during = time.time() - time_start
                 time_cost += float(time_during)
                 memory += memo
-            time_cost/=args.fold_num
-            memory/=args.fold_num
+            time_cost /= args.fold_num
+            memory /= args.fold_num
             model_acc_global_mean.append(np.mean(np.array(acc_global_mean)))
             model_acc_target_mean.append(np.mean(np.array(acc_target_mean)))
             model_acc_global_std.append(np.std(np.array(acc_global_mean)))
@@ -276,6 +278,6 @@ if __name__ == '__main__':
             log_json['model_std'] = model_acc_global_std[model_idx]
             log_json['model_running_time'] = model_running_time[model_idx]
 
-            with open('./checkpoints/'+model_name+'_'+args.attacker+'_'+args.dataset+
-                      '_'+str(pr)+'.json', 'w') as f:
+            with open('./checkpoints/' + model_name + '_' + args.attacker + '_' + args.dataset +
+                      '_' + str(pr) + '.json', 'w') as f:
                 f.write(json.dumps(log_json))
