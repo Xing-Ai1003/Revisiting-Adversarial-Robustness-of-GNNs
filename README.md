@@ -1,11 +1,11 @@
-This repository contains the code for our AAAI 2025 contributed paper “
-SFR-GNN: Simple and Fast Robust GNNs against Structural Attacks”.
+This repository contains the code for paper “Revisiting Adversarial Robustness of GNNs against Structural Attacks: a Simple and Fast Approach”.
 
 ## Basic Environment
 
 * `python >= 3.9`
 * `pytorch >= 1.13.0`
-*
+* `deeprobust >= 0.2.9`
+* `scipy >= 1.9.3`
 
 See `requirements.txt` for more information.
 
